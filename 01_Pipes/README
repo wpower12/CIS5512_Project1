@@ -1,0 +1,26 @@
+*** Usage Instructions ***
+
+Ensure that the source text file is located in the same directory, then excute the command $pipe$.  If succesfull, the program will output the word counts to $out.txt$ in the same directroy, as well as the total line count read to $stdout$.  
+
+*** Program Design ***
+
+The program is in three main parts, an initialization, then a fork with a parent process and a child process.
+
+* Initilization *
+
+Before the fork, the program creates two semaphores in shared memory.  These are used to ensure a strict alternation between reading and writing to the pipe buffer.  This is done to prevent overruns of more than one line in the pipe, creating boundry issues. 
+
+* Parent *
+
+The parent process reads the actual text file.  This is done line by line with the getline method.  Multiple reads of the text file may be done in a single loop to ensure a non empty line is found.  Once one is, the parent waits on the write semaphore before actually pushing the line into the pipe. Once all lines are read, the pipe is closed to signal to all children that no more data will flow through the pipe.
+
+* Child *
+
+The child first creates a hashmap, a quick and efficient data store.  The hashmap used in the child maps a key (in this case a string) to a value (in this case a count).  
+
+The process of reading from the pipe waits on the read semaphore.  This ensures the child is only trying to read after the parent has succesfully written a non empty line. 
+
+When the pipe is read from, the line is split on the ' ' character.  For each of these tokens, the hashmap is queried.  If the token is found, its value is incremented, if not, it is added to the hashmap with a value of 1.
+
+Once the pipe signals it has been closed, the hashmap is iterated over to create the output file. 
+
