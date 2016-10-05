@@ -39,25 +39,22 @@ int main( int argc, char** args ){
 	if (pid == 0) { 
 		close( pip[1] );  
 
-		std::ofstream logf ("log.txt", std::ofstream::out);
 		std::unordered_map<std::string,int> wordcounts;
 
 		char readbuffer[200];	
 		char * token   = (char *)malloc(50);
 		int r = 1;
-		int tcount = 0;
 		while( r > 0){
 			// ** Critical Section for 'Readers'
 			sem_wait( canRead );
-			memset(&readbuffer, 0, sizeof(readbuffer));	// Clearing buffer before reading.
+			memset(&readbuffer, 0, sizeof(readbuffer));	// Clear out buffer 
 			r = read( pip[0], readbuffer, sizeof(readbuffer) );
 			sem_post( canWrite );
-			// ** End Critical Section 
+			// ** End Critical Section  
 
 			// Split the read line on ' ' and check each token in the hashmap
 			token = strtok( readbuffer, " " );
 			while(token){
-				tcount++;
 				auto result = wordcounts.find( token );
 				if(result == wordcounts.end()){
 					// Not found, insert
@@ -68,9 +65,6 @@ int main( int argc, char** args ){
 				token = strtok(NULL, " ");
 			}
 		}
-
-		logf << "read: " << tcount << " tokens\n";
-		logf.close();
 
 		// iterate over hash-map to build output file.
 		std::ofstream outfile ("out.txt", std::ofstream::out);
@@ -100,16 +94,14 @@ int main( int argc, char** args ){
 				write( pip[1], line.c_str(), line.size() );
 				sem_post( canRead );
 				// ** End Critical Section **
-
-				lcount++;
 			}
 			sem_post( canRead );
 			close(pip[1]);
 		} else {
 			std::cout << "Cannot Read Input File.\n";
 		}
-		printf("Read %d lines\n", lcount);
 		infile.close();
+		printf("Read %d lines\n", lcount);
 		sem_close( canWrite );
 		sem_close( canRead );
 	}
